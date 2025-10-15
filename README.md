@@ -1,15 +1,5 @@
 # DiffLoc
-DiffLoc: Diffusion Model for Outdoor LiDAR Localization
-
-[Paper](https://openaccess.thecvf.com/content/CVPR2024/papers/Li_DiffLoc_Diffusion_Model_for_Outdoor_LiDAR_Localization_CVPR_2024_paper.pdf) 
-[Supp](https://openaccess.thecvf.com/content/CVPR2024/supplemental/Li_DiffLoc_Diffusion_Model_CVPR_2024_supplemental.pdf)
-[Poster](https://drive.google.com/file/d/1P80GGOAyWRF5BICAQ990PDO0iByW2kbP/view)
-[Video](https://www.youtube.com/watch?v=sSW9nHQR0nc&t=31s)
-
-<img src="https://github.com/liw95/DiffLoc/blob/main/img/DiffLoc.jpg" width=500>
-
-## Visualization
-![image](img/Results.jpg)
+" 本项目是复现diffloc跑其他数据集 关于遇到问题的一些笔记  原文请参考https://github.com/liw95/DiffLoc
 
 # Environment
 
@@ -22,6 +12,10 @@ DiffLoc: Diffusion Model for Outdoor LiDAR Localization
 ```
 source install.sh
 ```
+
+- 相关包无法安装问题（eg. `torchsparse`、`torch_scatter`、`pytorch3d`、`spvnas`）参考 https://github.com/herry0415/BevDiffLoc 的解决方案bevdiffloc和diffloc的安装环境几乎一致
+- SPVRCNN的权重已经下载过了 `权重init`在`./DiffLoc/spvnas/.torch/spvcnn/SemanticKITTI_val_SPVCNN@119GMACs/init`
+- 然后修改`./DiffLoc/spvnas/model_zoo.py`中`spvcnn`函数为本地加载init权重   **因为官方的权重可能已经失效或者无法下载**
 
 ## Dataset
 
