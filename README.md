@@ -31,7 +31,7 @@ Run the contrastive experiment for Hercules using this model
   - 序列名 `train.sequence`
   - 权重路径 `exp_name 和 ckpt `
   - 数据集类别 `train.dataset`  `'Hercules_radar'`加载radar数据集类  `'Hercules'` 加载lidar数据集类
-  - 深度投影图像对应的均值和方差
+  - 深度投影图像对应的均值和方差 `sensors.image_mean` 和 `sensors.image_stds`
 
 ## 2. 修改train.py加载配置文件部分`
 ```
