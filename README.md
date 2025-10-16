@@ -9,9 +9,17 @@ Run the contrastive experiment for Hercules using this model
 - 安装torch_scatter的时候
     - 需要去一个官网https://data.pyg.org/whl/下载一个包  手动安装一下
     - 找到一个对应版本包进行下载 `torch_scatter-2.0.9-cp38-linux_x86`
-- pytorch3d 也是需要去官网下载git 文件。然后  `pip install -e .`
-- spvnas要放在diffloc主文件夹下、其他几个包放项目文件夹下也可以
-- 最后要注意有些包需要加载到PYTHON环境变量中去PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
+- pytorch3d 也是去官网下载git 文件。然后pip install -e .
+- spvnas要放在diffloc主文件夹下
+- PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
+- MinkowskiEngine 可能需要降低`numpy==1.22.0`和`setuptools==59.5.0`
+```
+pip install setuptools==59.5.0
+pip install numpy==1.22.0
+git clone https://github.com/NVIDIA/MinkowskiEngine.git
+cd MinkowskiEngine
+pip install -e . 
+```
 
 # Data prepare
 - lidar 需要运行`hercules_prepare.py` 对lidar进行处理
