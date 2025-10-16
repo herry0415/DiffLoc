@@ -84,7 +84,7 @@ class RangeProjection(object):
 
         proj_pointcloud = np.full(
             (self.proj_h, self.proj_w, pointcloud.shape[1]), -1, dtype=np.float32)
-        proj_pointcloud[proj_y, proj_x] = pointcloud
+        proj_pointcloud[proj_y, proj_x] = pointcloud #! 在这里传入的是整个点云
 
         proj_idx = np.full((self.proj_h, self.proj_w), -1, dtype=np.int32)
         proj_idx[proj_y, proj_x] = indices

@@ -163,7 +163,7 @@ class Hercules(data.Dataset):
         mapping = {
             'Library': (['Library_01_Day','Library_02_Night'], ['Library_03_Day']),
             'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
-            'Sports': (['Complex_01_Day','Complex_03_Day'], ['Complex_02_Night'])
+            'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
         }
         return mapping[sequence_name][0] if train else mapping[sequence_name][1]
     

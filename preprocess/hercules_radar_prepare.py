@@ -159,7 +159,9 @@ if __name__ == '__main__':
     model = model.to(device)
 
     scene_dict = {
-    'Library': (['Library_01_Day', 'Library_02_Night'], ['Library_03_Day']),
+    # 'Library': (['Library_01_Day', 'Library_02_Night'], ['Library_03_Day']),
+    'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
+    'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
     # 将来可以加其他场景：
     # 'City': (['City_01_Day', 'City_02_Night'], ['City_03_Day']),
     }
@@ -167,14 +169,14 @@ if __name__ == '__main__':
     # 遍历场景和训练子目录
     for scene_name, (train_subdirs, test_subdirs) in scene_dict.items():
         for subdir in train_subdirs:   # 只计算训练集
-            input_path = os.path.join(args.velodyne_dir, scene_name, subdir, 'LiDAR', 'np8Aeva')
+            input_path = os.path.join(args.velodyne_dir, scene_name, subdir, 'Radar', 'multi_frame_w7')
             file_list = sorted(os.listdir(input_path))
 
             # 输出保存目录
-            save_dir = os.path.join(args.velodyne_dir, scene_name, subdir, 'LiDAR', 'SPVNAS_np8Aeva_plane_segmented')
+            save_dir = os.path.join(args.velodyne_dir, scene_name, subdir, 'Radar', 'SPVNAS_multi_frame7_plane_segmented')
             os.makedirs(save_dir, exist_ok=True)
 
-            for file_name in tqdm(file_list, desc="Processing Hercules bin files..."):
+            for file_name in tqdm(file_list, desc=f"Processing Hercules {subdir} radar bin files..."):
                 if not file_name.endswith('.bin'):
                     continue
 
@@ -182,7 +184,7 @@ if __name__ == '__main__':
                 pc_full = np.fromfile(os.path.join(input_path, file_name), dtype=np.float32).reshape(-1, 8)
 
                 # 只取 x, y, z 和 intensity（第 8 维）
-                pc = np.concatenate([pc_full[:, :3], pc_full[:, 7:8]], axis=1)  # shape: [N, 4]
+                pc = np.concatenate([pc_full[:, :3], pc_full[:, 5:6]], axis=1)  # shape: [N, 4]
 
                 # （可选）Z 轴是否要翻转，取决于 Hercules 坐标系
                 # pc[:, 2] = -pc[:, 2]  

@@ -6,6 +6,7 @@ sys.path.insert(0, '../')
 from .oxford import Oxford
 from .nclt import NCLT
 from .hercules_lidar import Hercules
+from .hercules_radar import Hercules_Radar
 from torch.utils import data
 from utils.pose_util import calc_vos_safe_fc
 
@@ -23,6 +24,8 @@ class MF(data.Dataset):
             self.dset = NCLT(config, split)
         elif dataset == 'Hercules':
             self.dset = Hercules(config, split)
+        elif dataset == 'Hercules_radar':
+            self.dset = Hercules_Radar(config, split)
         else:
             raise NotImplementedError('{:s} dataset is not implemented!')
 
@@ -58,7 +61,7 @@ class MF(data.Dataset):
         batch = {
             "image": pcs, # 5纬 特征 range（depth） + x,y,z + intensity
             "pose": poses,  # shape [6] xyzrpy
-            "mask": mask # 标签label 分类标签
+            "mask": mask 
         }
         return batch
 

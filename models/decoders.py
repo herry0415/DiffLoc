@@ -42,6 +42,6 @@ class DecoderLinear(nn.Module):
     def forward(self, x, im_size, skip=None):
         H, W = im_size
         GS_H, GS_W = get_grid_size_2d(H, W, self.patch_size, self.patch_stride)
-        x1 = self.head(x) #！ torch.Size([24, 256, 1])
-        x2 = rearrange(x1, 'b (h w) c -> b c h w', h=GS_H) # torch.Size([24, 1, 8, 32])
+        x1 = self.head(x)
+        x2 = rearrange(x1, 'b (h w) c -> b c h w', h=GS_H)
         return x1, x2

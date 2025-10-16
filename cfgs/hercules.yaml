@@ -1,12 +1,16 @@
-ckpt: 'logh64lr3new/ckpt_000111.pth' #! 测试的路径 修改
+ckpt: 'log_Library/ckpt_000151.pth' #! 测试的路径 修改
 seed: 7
 exp_name: 'hercules'  #! 修改
-exp_dir: 'logh64lr3new'
+exp_dir: 'log_Library'
 sampling_timesteps: 10
 
 train:
+    dataset: 'Hercules' #! 修改
+    sequence: 'Library'
+    dataroot: '/data/drj/HeRCULES' #! 修改
+    resume_ckpt_path: 'log_Library/ckpt_000300.pth' #! 断点续训的路径 为空表示不使用断点续训 原始是155
     batch_size: 12 #todo 
-    val_batch_size: 1
+    val_batch_size: 12
     image_size: [64, 512] #todo 
     original_image_size: [64, 512] #todo
     steps: 3
@@ -20,17 +24,13 @@ train:
     eval_interval: 10   #！ 训练多少轮进行一次评估
     print_interval: 50
     persistent_workers: True
-    resume_ckpt_path: 'log_lr/ckpt_000300.pth' #! 断点续训的路径 为空表示不使用断点续训 原始是155
     pin_memory: True
     clip_grad: 1.0
 
     cudnnbenchmark: True
 
     warmup_sche: True
-    dataset: 'Hercules' #! 修改
-    sequence: 'Library'
-    dataroot: '/home/data/ldq/HeRCULES/' #! 修改
- 
+
 profile: False
 
 

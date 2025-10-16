@@ -113,7 +113,7 @@ def padding(im, patch_size, fill_value=0):
     return im_padded
 
 
-def unpadding(y, target_size): # 去掉填充的多余像素，使输出回到原始尺寸
+def unpadding(y, target_size):
     H, W = target_size
     H_pad, W_pad = y.size(2), y.size(3)
     # crop predictions on extra pixels coming from padding

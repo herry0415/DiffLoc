@@ -1,86 +1,69 @@
 # DiffLoc
-" 本项目是复现diffloc跑其他数据集 关于遇到问题的一些笔记  原文请参考https://github.com/liw95/DiffLoc
+Run the contrastive experiment for Hercules using this model
 
-# Environment
+`此代码修改为只能训radar 对mask进行了调整` 在模型和损失函数里面
 
-- python 3.9
+# Environment setup
+- 按照给定的install.sh环境安装一下torch和其他的库。下面几个库如果遇到问题就手动安装：
+- 安装torchsparse 的时候要去官方github下载一下 然后放进去 运行`pip install -e .` 来安装
+- 安装torch_scatter的时候
+    - 需要去一个官网https://data.pyg.org/whl/下载一个包  手动安装一下
+    - 找到一个对应版本包进行下载 `torch_scatter-2.0.9-cp38-linux_x86`
+- pytorch3d 也是需要去官网下载git 文件。然后  `pip install -e .`
+- spvnas要放在diffloc主文件夹下、其他几个包放项目文件夹下也可以
+- 最后要注意有些包需要加载到PYTHON环境变量中去PYTHONPATH  `export PYTHONPATH=/home/ldq/code/DiffLoc-main/spvnas:/home/ldq/code/DiffLoc-main`
 
-- pytorch 1.13
+# Data prepare
+- lidar 需要运行`hercules_prepare.py` 对lidar进行处理
+- radar 不需要进行处理 需要在代码中进行修改
 
-- cuda 11.6
+# config 文件
+在`train/test` 之前要修改`hercules_bev.yaml/hercules_radar_bev.yaml`的参数
+- hercules.yaml   lidar 的train/test 文件
+- hercules_radar.yaml   radar 的train/test 文件
 
+# Train
+
+## 1. 更改配置文件 
+
+选择`lidar/radar` 对应  `hercules_bev.yaml/hercules_radar_bev.yaml`
+  - 数据集路径 `train.dataroot`
+  - 序列名 `train.sequence`
+  - 权重路径 `exp_name 和 ckpt `
+  - 数据集类别 `train.dataset`  `'Hercules_radar'`加载radar数据集类  `'Hercules'` 加载lidar数据集类
+  - 深度投影图像对应的均值和方差
+
+## 2. 修改train.py加载配置文件部分`
 ```
-source install.sh
-```
-
-- 相关包无法安装问题（eg. `torchsparse`、`torch_scatter`、`pytorch3d`、`spvnas`）参考 https://github.com/herry0415/BevDiffLoc 的解决方案bevdiffloc和diffloc的安装环境几乎一致
-- SPVRCNN的权重已经下载过了 `权重init`在`./DiffLoc/spvnas/.torch/spvcnn/SemanticKITTI_val_SPVCNN@119GMACs/init`
-- 然后修改`./DiffLoc/spvnas/model_zoo.py`中`spvcnn`函数为本地加载init权重   **因为官方的权重可能已经失效或者无法下载**
-
-## Dataset
-
-We support the [Oxford Radar RobotCar](https://oxford-robotics-institute.github.io/radar-robotcar-dataset/datasets) and [NCLT](https://robots.engin.umich.edu/nclt/) datasets right now.
-
-The data of the Oxford and NCLT datasets should be organized as follows:
-
-```
-data_root
-├── 2019-01-11-14-02-26-radar-oxford-10k
-│   ├── xxx.bin
-│   ├── xxx.bin
-├── Oxford_pose_stats.txt
-├── train_split.txt
-├── valid_split.txt
-```
-
-## Data prepare
-
-- NCLT: We use [NCLT Sample Python Scripts](https://robots.engin.umich.edu/nclt/) to preprocess velodyne_sync to speed up data reading. We provided within it [nclt_precess.py](preprocess/nclt_precess.py).
-
-- Oxford&NCLT: We use [SPVNAS](https://github.com/mit-han-lab/spvnas) to generate static object masks to train the SOAP module. You need to download the code for SPVNAS and run the [data_prepare.py](preprocess/data_prepare.py).
-
-**Note:** We notice the pre-trained weights for the segmentation model are no longer available for download. A backup is provided on my [Google Drive](https://drive.google.com/file/d/1jtDClM-6EnW329FtJ0WXVBopOTuVRXJG/view?usp=sharing). Please follow the installation instructions on [Docs](https://github.com/PJLab-ADG/OpenPCSeg/blob/master/docs/INSTALL.md) to install the necessary libraries. If you use the model, please cite the [corresponding paper](https://github.com/mit-han-lab/spvnas).
-
-## Run
-
-### Download the pretrained ViT model
-We initialize DiffLoc's feature learner using the [DINOv2](https://github.com/facebookresearch/dinov2?tab=readme-ov-file).
-
-### Train
-
-```
-accelerate launch --multi_gpu --num_processes 4 --mixed_precision fp16 train.py
+conf = OmegaConf.load('cfgs/hercules.yaml')`
 ```
 
-### Test
+
+## 3. 终端进行分布式训练
+- 一定用`accelerate`指令且**半精度训练**
+
+```python
+accelerate launch --num_processes 3 --mixed_precision fp16 train_bev.py
 ```
+- num_processes 可以指定为多个 具体使用哪个GPU 在代码里面用`os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2, 3"` 去进行调整
+- 如果出现多进程训练端口被占用的情况 可以用 `--main_process_port 29501` 或任何一个大于 1024 且小于 65535 的端口
+
+# Test
+"基本流程同训练
+## 1. 更改配置文件
+## 2. 修改test.py加载配置文件部分
+```
+conf = OmegaConf.load('cfgs/hercules_bev.yaml')
+```
+
+## 3. 运行代码进行测试
+
+```python
 python test.py
 ```
 
-## Model zoo
 
-The models of DiffLoc on Oxford, and NCLT can be downloaded [here](https://drive.google.com/drive/folders/17uhEqc7BYqLETecllyLMorI0lOI9hBiQ).
 
-## Acknowledgement
 
- We would like to express our gratitude for the code shared by [RangeVit](https://github.com/valeoai/rangevit) and [PoseDiffusion](https://github.com/facebookresearch/PoseDiffusion).
 
-## Citation
 
-```
-@inproceedings{li2024diffloc,
-  title={DiffLoc: Diffusion Model for Outdoor LiDAR Localization},
-  author={Li, Wen and Yang, Yuyang and Yu, Shangshu and Hu, Guosheng and Wen, Chenglu and Cheng, Ming and Wang, Cheng},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  pages={15045--15054},
-  year={2024}
-}
-
-@inproceedings{li2023sgloc,
-  title={SGLoc: Scene Geometry Encoding for Outdoor LiDAR Localization},
-  author={Li, Wen and Yu, Shangshu and Wang, Cheng and Hu, Guosheng and Shen, Siqi and Wen, Chenglu},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-  pages={9286--9295},
-  year={2023}
-}
-```

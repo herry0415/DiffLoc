@@ -8,9 +8,10 @@ import time
 import pstats
 import cProfile
 import torch.nn as nn
-
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1, 2, 3"
+import datetime
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 
 from hydra.utils import instantiate
 from collections import OrderedDict
@@ -62,7 +63,9 @@ def train_fn(cfg: DictConfig):
     OmegaConf.set_struct(cfg, False)  # 允许在训练过程中动态增加或修改 cfg 中不存在的字段
 
     # Initialize the accelerator
-    accelerator = Accelerator(even_batches=False, device_placement=False) #！ device_placement 自己设置数据在gpu和cpu的位置
+    
+    ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=True)
+    accelerator = Accelerator(even_batches=False, device_placement=False, kwargs_handlers=[ddp_kwargs]) #！ device_placement 自己设置数据在gpu和cpu的位置
 
     accelerator.print("Model Config:") 
     accelerator.print(OmegaConf.to_yaml(cfg))  
@@ -136,7 +139,8 @@ def train_fn(cfg: DictConfig):
 
     start_epoch = 0
 
-    to_plot = ("loss", "lr", "diffloss", "segloss","error_t", "seg_iou")
+    # to_plot = ("loss", "lr", "diffloss", "segloss","error_t", "seg_iou")
+    to_plot = ("loss", "lr", "diffloss", "error_t")
 
     stats = VizStats(to_plot)
     
@@ -165,6 +169,14 @@ def train_fn(cfg: DictConfig):
             accelerator.print(f"Resuming training from epoch {start_epoch}")
         else:
             accelerator.print(f"Checkpoint {ckpt_path} not found, start training from scratch.")
+
+    #! 打印相关yaml文件的信息
+    # 确保 exp_dir 存在
+    if not os.path.exists(cfg.exp_dir):
+        os.makedirs(cfg.exp_dir)
+
+    train_details_path = save_train_details_partial(cfg, cfg.exp_dir)
+        
 
     for epoch in range(start_epoch, num_epochs):
         stats.new_epoch() # 1
@@ -237,8 +249,10 @@ def _train_or_eval_fn(model, criterion, dataloader, cfg, optimizer, stats, accel
         if training:
             predictions = model(images, poses, training=True)
             predictions["diffloss"] = predictions["diffloss"]
-            predictions["segloss"] = criterion(predictions["pred_mask"], masks)
-            loss = predictions["diffloss"] + predictions["segloss"]
+
+            # predictions["segloss"] = criterion(predictions["pred_mask"], masks)
+            # loss = predictions["diffloss"] + predictions["segloss"]
+            loss = predictions["diffloss"]
         else:
             with torch.no_grad():
                 predictions = model(images, training=False)
@@ -247,26 +261,27 @@ def _train_or_eval_fn(model, criterion, dataloader, cfg, optimizer, stats, accel
         frame_num = frame_size * batch_size
         pred_poses = predictions['pred_pose'].reshape(frame_num, 6)  # [B*N, 6]
         gt_poses = poses.reshape(frame_num, 6)  # [B*N, 6]
+        
         # change to [B*N, 32, 512]
-        pred_mask = predictions['pred_mask'].reshape(frame_num, H, W)
-        gt_mask = masks.reshape(frame_num, H, W)
+        # pred_mask = predictions['pred_mask'].reshape(frame_num, H, W)
+        # gt_mask = masks.reshape(frame_num, H, W)
 
         iou = 0.
         for i in range(frame_num):
             # Sigmoid
-            batch_mask = torch.sigmoid(pred_mask[i]) > 0.5
-            batch_gt_mask = gt_mask[i] == 1
-            intersection = torch.sum(batch_mask * batch_gt_mask)
-            union = torch.sum((batch_gt_mask + batch_mask) >= 1) + 1e-6
+            # batch_mask = torch.sigmoid(pred_mask[i]) > 0.5
+            # batch_gt_mask = gt_mask[i] == 1
+            # intersection = torch.sum(batch_mask * batch_gt_mask)
+            # union = torch.sum((batch_gt_mask + batch_mask) >= 1) + 1e-6
             if i == 0:
                 error_t = t_error(pred_poses[i, :3], gt_poses[i, :3], pose_s, pose_m)
-                iou = intersection / union
+                # iou = intersection / union
             else:
                 error_t += (t_error(pred_poses[i, :3], gt_poses[i, :3], pose_s, pose_m))
-                iou += intersection / union
+                # iou += intersection / union
 
         predictions['error_t'] = error_t / frame_num
-        predictions['seg_iou'] = iou / frame_num
+        # predictions['seg_iou'] = iou / frame_num
 
         if training:
             stats.update(predictions, time_start=time_start, stat_set="train")
@@ -311,8 +326,36 @@ def val_translation(pred_p, gt_p, pose_s, pose_mean):
     return error
 
 
+
+def save_train_details_partial(cfg, exp_dir):
+    """
+    保存训练关键参数信息到带时间戳的 train_details.txt
+    """
+    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_path = os.path.join(exp_dir, f"{ts}_train_details.txt")
+    
+    with open(file_path, 'w') as f:
+        f.write(f"===== Train Details =====\n")
+        f.write(f"Timestamp: {ts}\n\n")
+
+        # 保存部分关键信息
+        f.write(f"ckpt: {cfg.ckpt}\n")
+        f.write(f"seed: {cfg.seed}\n")
+        f.write(f"exp_name: {cfg.exp_name}\n")
+        f.write(f"exp_dir: {cfg.exp_dir}\n")
+        f.write(f"sampling_timesteps: {cfg.sampling_timesteps}\n\n")
+    
+        f.write("train:\n")
+        train_cfg = cfg.train
+        for k, v in train_cfg.items():
+            f.write(f"    {k}: {v}\n")
+    
+    print(f"Training details saved to: {file_path}")
+    return file_path
+
 if __name__ == '__main__':
     # oxford.yaml / nclt.yaml
-    conf = OmegaConf.load('cfgs/hercules.yaml')
+    # conf = OmegaConf.load('cfgs/hercules.yaml') 
+    conf = OmegaConf.load('cfgs/hercules_radar.yaml') # hercules_radar.yaml
 
     train_fn(conf)
