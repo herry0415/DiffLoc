@@ -2,14 +2,14 @@ import os
 import numpy as np
 from tqdm import tqdm
 
-root_path = '/home/drj/data/HeRCULES/'
+root_path = '/data/drj/HeRCULES/'
 output_dir = '/home/drj/project/DiffLoc/stats'
 
 # 定义场景字典
 scene_dict = {
-    'Library': (['Library_01_Day', 'Library_02_Night'], ['Library_03_Day']),
-    # 'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
-    # 'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
+    # 'Library': (['Library_01_Day', 'Library_02_Night'], ['Library_03_Day']),
+    'Mountain': (['Mountain_01_Day','Mountain_02_Night'], ['Mountain_03_Day']),
+    'Sports': (['Complex_01_Day','Complex_02_Night'], ['Complex_03_Day'])
 }
 
 # 计算函数：通用

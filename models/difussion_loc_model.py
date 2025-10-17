@@ -65,26 +65,26 @@ class DiffusionLocModel(nn.Module):
         """
         shapelist = list(image.shape)
         batch_size = len(image)
+
+        #! lidar训练模块
         if training:
             reshaped_image = image.reshape(shapelist[0] * shapelist[1], *shapelist[2:]) #! [24,5,512]
-            # z, pred_mask = self.image_feature_extractor(reshaped_image)  # [B, N, 384] [B, N, 256, 1]
-            z = self.image_feature_extractor(reshaped_image)
+            z, pred_mask = self.image_feature_extractor(reshaped_image)  # [B, N, 384] [B, N, 256, 1]
             z = z.reshape(batch_size, shapelist[1], -1)  # [B*N, C]   [B, N, C]
-            # pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2],
-            #                                          shapelist[-1])  # [B*N, 32, 512]
+            pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2],
+                                                     shapelist[-1])  # [B*N, 32, 512]
             diffusion_results = self.diffuser(pose, z=z)
             diffusion_results['pred_pose'] = diffusion_results["x_0_pred"]
             # SOAP mask
-            # diffusion_results['pred_mask'] = pred_mask
+            diffusion_results['pred_mask'] = pred_mask
 
             return diffusion_results
 
         else:
             reshaped_image = image.reshape(shapelist[0] * shapelist[1], *shapelist[2:])
-            # z, pred_mask = self.image_feature_extractor(reshaped_image)
-            z = self.image_feature_extractor(reshaped_image)
+            z, pred_mask = self.image_feature_extractor(reshaped_image)
             z = z.reshape(batch_size, shapelist[1], -1)
-            # pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2], shapelist[-1])
+            pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2], shapelist[-1])
             B, N, _ = z.shape
 
             target_shape = [B, N, self.target_dim]
@@ -96,8 +96,46 @@ class DiffusionLocModel(nn.Module):
             pred_pose, _ = self.diffuser.ddim_sample(shape=target_shape, z=z, sampling_timesteps=sampling_timesteps)
             diffusion_results = {
                 "pred_pose": pred_pose,  # [B, N, 6]
-                # 'pred_mask': pred_mask,  # [B, N, 256, 1]
+                'pred_mask': pred_mask,  # [B, N, 256, 1]
                 "z": z
             }
 
             return diffusion_results
+
+        #! radar训练模块
+        # if training:
+        #     reshaped_image = image.reshape(shapelist[0] * shapelist[1], *shapelist[2:]) #! [24,5,512]
+        #     # z, pred_mask = self.image_feature_extractor(reshaped_image)  # [B, N, 384] [B, N, 256, 1]
+        #     z = self.image_feature_extractor(reshaped_image)
+        #     z = z.reshape(batch_size, shapelist[1], -1)  # [B*N, C]   [B, N, C]
+        #     # pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2],
+        #     #                                          shapelist[-1])  # [B*N, 32, 512]
+        #     diffusion_results = self.diffuser(pose, z=z)
+        #     diffusion_results['pred_pose'] = diffusion_results["x_0_pred"]
+        #     # SOAP mask
+        #     # diffusion_results['pred_mask'] = pred_mask
+
+        #     return diffusion_results
+
+        # else:
+        #     reshaped_image = image.reshape(shapelist[0] * shapelist[1], *shapelist[2:])
+        #     # z, pred_mask = self.image_feature_extractor(reshaped_image)
+        #     z = self.image_feature_extractor(reshaped_image)
+        #     z = z.reshape(batch_size, shapelist[1], -1)
+        #     # pred_mask = pred_mask.squeeze(1).reshape(shapelist[0] * shapelist[1], shapelist[-2], shapelist[-1])
+        #     B, N, _ = z.shape
+
+        #     target_shape = [B, N, self.target_dim]
+
+        #     # sampling
+        #     # ddpm
+        #     # pred_pose, pred_pose_diffusion_samples = self.diffuser.sample(shape=target_shape, z=z)
+        #     # ddim
+        #     pred_pose, _ = self.diffuser.ddim_sample(shape=target_shape, z=z, sampling_timesteps=sampling_timesteps)
+        #     diffusion_results = {
+        #         "pred_pose": pred_pose,  # [B, N, 6]
+        #         # 'pred_mask': pred_mask,  # [B, N, 256, 1]
+        #         "z": z
+        #     }
+
+        #     return diffusion_results

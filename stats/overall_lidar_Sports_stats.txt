@@ -1,0 +1,3 @@
+# mean_depth mean_xyz(3) mean_intensity | std_depth std_xyz(3) std_intensity
+23.653740 20.904573 0.149109 0.067114 -59.133118
+15.397262 15.084655 10.999094 1.395586 3.806290

@@ -222,28 +222,7 @@ class RangeViT(nn.Module):
         )
         return nwd_params
 
-
-    # def forward(self, im):
-    #     H_ori, W_ori = im.size(2), im.size(3)  # [B*N, 32, 720, 5]
-    #     im = padding(im, self.patch_size)
-    #     H, W = im.size(2), im.size(3)
-
-    #     x, skip = self.encoder(im, return_features=True)
-
-    #     # remove CLS tokens for decoding
-    #     num_extra_tokens = 1
-    #     x = x[:, num_extra_tokens:]
-
-    #     pred_mask, feats = self.decoder(x, (H, W), skip)
-    #     # sigmoid
-    #     pred_mask = torch.sigmoid(pred_mask)
-    #     #
-    #     feats = F.interpolate(feats, size=(H, W), mode='bilinear')
-    #     feats = unpadding(feats, (H_ori, W_ori))
-    #     x = (x + x * pred_mask).mean(1)
-
-    #     return x, feats
-
+    #! lidar训练
     def forward(self, im):
         H_ori, W_ori = im.size(2), im.size(3)  # [B*N, 32, 720, 5]
         im = padding(im, self.patch_size)
@@ -255,16 +234,38 @@ class RangeViT(nn.Module):
         num_extra_tokens = 1
         x = x[:, num_extra_tokens:]
 
-        # pred_mask, feats = self.decoder(x, (H, W), skip)
+        pred_mask, feats = self.decoder(x, (H, W), skip)
         # sigmoid
-        # pred_mask = torch.sigmoid(pred_mask)
+        pred_mask = torch.sigmoid(pred_mask)
         #
-        # feats = F.interpolate(feats, size=(H, W), mode='bilinear')
-        # feats = unpadding(feats, (H_ori, W_ori))
-        # x = (x + x * pred_mask).mean(1)
-        x = x.mean(1)
-        # return x, feats
-        return x
+        feats = F.interpolate(feats, size=(H, W), mode='bilinear')
+        feats = unpadding(feats, (H_ori, W_ori))
+        x = (x + x * pred_mask).mean(1)
+
+        return x, feats
+        
+    #! radar训练
+    # def forward(self, im):
+    #     H_ori, W_ori = im.size(2), im.size(3)  # [B*N, 32, 720, 5]
+    #     im = padding(im, self.patch_size)
+    #     H, W = im.size(2), im.size(3)
+
+    #     x, skip = self.encoder(im, return_features=True)
+
+    #     # remove CLS tokens for decoding
+    #     num_extra_tokens = 1
+    #     x = x[:, num_extra_tokens:]
+
+    #     # pred_mask, feats = self.decoder(x, (H, W), skip)
+    #     # sigmoid
+    #     # pred_mask = torch.sigmoid(pred_mask)
+    #     #
+    #     # feats = F.interpolate(feats, size=(H, W), mode='bilinear')
+    #     # feats = unpadding(feats, (H_ori, W_ori))
+    #     # x = (x + x * pred_mask).mean(1)
+    #     x = x.mean(1)
+    #     # return x, feats
+    #     return x
 
 
 class ImageFeatureExtractor(nn.Module):

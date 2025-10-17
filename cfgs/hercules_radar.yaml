@@ -1,14 +1,14 @@
-ckpt: 'log_radar_Library/ckpt_000150.pth' #! 测试的路径 修改
+ckpt: 'log_radar_Mountain/ckpt_000111.pth' #! 测试的路径 修改
 seed: 7
-exp_name: 'hercules_radar'  #! 修改
-exp_dir: 'log_radar_Library'
+exp_name: 'hercules_radar'  #! 修改 #['Library', 'Mountain', 'Sports']
+exp_dir: 'log_radar_Mountain'
 sampling_timesteps: 10
 
 train:
     dataset: 'Hercules_radar' #! 修改
-    sequence: 'Library'
+    sequence: 'Mountain'
     dataroot: '/data/drj/HeRCULES' #! 修改
-    resume_ckpt_path: 'log_radar_Library/ckpt_000300.pth' #! 断点续训的路径 为空表示不使用断点续训 原始是155
+    resume_ckpt_path: 'log_radar_log_radar_Mountain/ckpt_000300.pth' #! 断点续训的路径 为空表示不使用断点续训 原始是155
     batch_size: 12 #todo 
     val_batch_size: 12
     image_size: [64, 512] #todo 
@@ -40,23 +40,57 @@ sensors:
     fov_down: -15.  #! 修改 
     fov_left: -60 #! 修改 
     fov_right: 60 #! 修改 
-    image_mean: #todo ! 修改 radar mean 52.015839 49.402672 -1.134155 1.696148 179.975906
-        - 52.015839
-        - 49.402672
-        - -1.134155
-        - 1.696148
-        # - 179.975906
+
+    # mountain mean 52.366493 50.372917 2.690446 1.173819 212.480621
+    # mountain std 30.852026 30.540314 11.280114 4.936705 75.629906
+    image_mean:
+        - 52.366493
+        - 50.372917
+        - 2.690446
+        - 1.173819
+        # - 212.480621
         - 0
+    image_stds:
+        - 30.852026
+        - 30.540314
+        - 11.280114
+        - 4.936705
+        #  - 75.629906
+        - 1
+    
+    # sports
+    # means 50.749763 47.345337 2.461592 1.504394 198.909637
+    # stds 29.506426 28.450218 15.458348 5.440603 91.033531
+    # image_mean:
+    #     - 50.749763
+    #     - 47.345337
+    #     - 2.461592
+    #     - 1.504394
+    #     # - 198.909637
+    #     - 0
+    # image_stds:
+    #     - 29.506426
+    #     - 28.450218
+    #     - 15.458348
+    #     - 5.440603
+    #     #  - 91.033531
+    #     - 1
+    # library radar
+    # image_mean: #todo ! 修改 radar mean 52.015839 49.402672 -1.134155 1.696148 179.975906
+    #     - 52.015839
+    #     - 49.402672
+    #     - -1.134155
+    #     - 1.696148
+    #     # - 179.975906
+    #     - 0
 
-
-
-    image_stds: #todo ! 修改 radar std 31.177977 30.190754 12.769697 5.220392 99.210167
-         - 31.177977
-         - 30.190754
-         - 12.769697
-         - 5.220392
-        #  - 99.210167
-         - 1
+    # image_stds: #todo ! 修改 radar std 31.177977 30.190754 12.769697 5.220392 99.210167
+    #      - 31.177977
+    #      - 30.190754
+    #      - 12.769697
+    #      - 5.220392
+    #     #  - 99.210167
+    #      - 1
 
 MODEL:
     _target_: models.DiffusionLocModel

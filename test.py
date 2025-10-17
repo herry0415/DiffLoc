@@ -9,7 +9,7 @@ import datetime
 import os.path as osp
 matplotlib.use('Agg')
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 from hydra.utils import instantiate
 from omegaconf import OmegaConf, DictConfig
 from utils.train_util import *
@@ -28,38 +28,81 @@ def log_string(out_str):
     print(out_str)
 
 
+# def save_test_details(cfg, exp_dir, epoch):
+#     """
+#     保存测试关键信息到带时间戳的 test_details.txt
+#     """
+#     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+#     file_path = os.path.join(exp_dir, f"epoch{epoch}_{ts}_test_details.txt")
+
+#     with open(file_path, 'w') as f:
+#         f.write(f"===== Test Details =====\n")
+#         f.write(f"Timestamp: {ts}\n\n")
+
+#         # 保存主要配置信息
+#         f.write(f"ckpt: {cfg.ckpt}\n")
+#         f.write(f"seed: {cfg.seed}\n")
+#         f.write(f"exp_name: {cfg.exp_name}\n")
+#         f.write(f"exp_dir: {cfg.exp_dir}\n")
+#         f.write(f"sampling_timesteps: {cfg.sampling_timesteps}\n\n")
+
+#         # 仅保存 train 部分关键参数
+#         f.write("train:\n")
+#         train_cfg = cfg.train
+#         keep_keys = [
+#             "dataset", "sequence", "dataroot", "val_batch_size",
+#             "num_workers", "pin_memory", "persistent_workers"
+#         ]
+#         for k, v in train_cfg.items():
+#             if k in keep_keys:
+#                 f.write(f"    {k}: {v}\n")
+
+#     print(f"Test details saved to: {file_path}")
+#     return file_path
+
 def save_test_details(cfg, exp_dir, epoch):
     """
-    保存测试关键信息到带时间戳的 test_details.txt
+    保存测试所有配置参数到带时间戳的 test_details.txt
+    （保留原格式结构，只扩展输出内容）
     """
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     file_path = os.path.join(exp_dir, f"epoch{epoch}_{ts}_test_details.txt")
 
+    def write_dict(f, d, indent=0):
+        """递归打印配置字典内容"""
+        indent_str = '    ' * indent
+        for k, v in d.items():
+            if v is None or v == "":
+                continue
+            if isinstance(v, dict):
+                f.write(f"{indent_str}{k}:\n")
+                write_dict(f, v, indent + 1)
+            else:
+                f.write(f"{indent_str}{k}: {v}\n")
+
     with open(file_path, 'w') as f:
-        f.write(f"===== Test Details =====\n")
+        f.write("===== Test Details =====\n")
         f.write(f"Timestamp: {ts}\n\n")
 
-        # 保存主要配置信息
+        # 保留原有主要信息输出格式
         f.write(f"ckpt: {cfg.ckpt}\n")
         f.write(f"seed: {cfg.seed}\n")
         f.write(f"exp_name: {cfg.exp_name}\n")
         f.write(f"exp_dir: {cfg.exp_dir}\n")
         f.write(f"sampling_timesteps: {cfg.sampling_timesteps}\n\n")
 
-        # 仅保存 train 部分关键参数
-        f.write("train:\n")
-        train_cfg = cfg.train
-        keep_keys = [
-            "dataset", "sequence", "dataroot", "val_batch_size",
-            "num_workers", "pin_memory", "persistent_workers"
-        ]
-        for k, v in train_cfg.items():
-            if k in keep_keys:
-                f.write(f"    {k}: {v}\n")
+        # 转换为普通字典
+        if not isinstance(cfg, dict):
+            cfg_dict = OmegaConf.to_container(cfg, resolve=True)
+        else:
+            cfg_dict = cfg
 
-    print(f"Test details saved to: {file_path}")
+        # 输出完整 cfg 结构
+        f.write("===== Full Config =====\n")
+        write_dict(f, cfg_dict)
+
+    print(f"✅ Test details saved to: {file_path}")
     return file_path
-
 
 def test(cfg: DictConfig):
     global TOTAL_ITERATIONS
@@ -99,9 +142,19 @@ def test(cfg: DictConfig):
     seed_all_random_engines(cfg.seed)
 
     #todo 路径和需要核对 === pose mean and std ===
-    pose_stats = os.path.join(cfg.train.dataroot, cfg.train.sequence, cfg.train.sequence + '_pose_stats.txt')
-    pose_m, pose_s = np.loadtxt(pose_stats)
+    #! 根据lidar类型进行选择
+    if cfg.train.dataset == 'Hercules':
+        pose_stats_file = cfg.train.sequence + '_lidar_pose_stats.txt'
+    elif cfg.train.dataset == 'Hercules_radar':
+        pose_stats_file = cfg.train.sequence + '_radar_pose_stats.txt'
+    else:
+        raise ValueError(f"Unknown dataset: {cfg.train.dataset}")
 
+    pose_stats = os.path.join(cfg.train.dataroot, cfg.train.sequence, pose_stats_file) 
+    print(f'pose_stats : {pose_stats}')
+
+    # pose_stats = os.path.join(cfg.train.dataroot, cfg.train.sequence, cfg.train.sequence + '_pose_stats.txt')
+    pose_m, pose_s = np.loadtxt(pose_stats)
     gt_translation = np.zeros((len(eval_dataset), 3))
     pred_translation = np.zeros((len(eval_dataset), 3))
     gt_rotation = np.zeros((len(eval_dataset), 4))
@@ -201,6 +254,7 @@ def test(cfg: DictConfig):
 
 if __name__ == '__main__':
     conf = OmegaConf.load('cfgs/hercules.yaml')
+    # conf = OmegaConf.load('cfgs/hercules_radar.yaml')
     LOG_FOUT = open(os.path.join(conf.exp_dir, 'log.txt'), 'w')
     LOG_FOUT.write(str(conf) + '\n')
     val_writer = SummaryWriter(os.path.join(conf.exp_dir, 'valid'))
